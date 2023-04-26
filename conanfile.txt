@@ -1,0 +1,9 @@
+[requires]
+benchmark/1.7.1
+fmt/9.1.0
+gtest/1.13.0
+spdlog/1.11.0
+
+[generators]
+CMakeDeps
+CMakeToolchain

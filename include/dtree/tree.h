@@ -22,21 +22,7 @@ public:
 
     Leaf(LabelDistribution labelDistribution)
         : mLabelDistribution{std::move(labelDistribution)}
-    {
-        std::cout << "Leaf(...)" << std::endl;
-    }
-
-    Leaf(const Leaf& leaf) : mLabelDistribution{leaf.mLabelDistribution}
-    {
-        std::cout << "Leaf(const Leaf&)" << std::endl;
-    }
-
-    Leaf(Leaf&& leaf) : mLabelDistribution{std::move(leaf.mLabelDistribution)}
-    {
-        std::cout << "Leaf(Leaf&&)" << std::endl;
-    }
-
-    ~Leaf() { std::cout << "~Leaf()" << std::endl; }
+    {}
 
     const LabelDistribution& GetDistribution() const
     {
@@ -59,9 +45,10 @@ public:
         , mLower{lower}
         , mUpper{upper}
     {
-        std::cout << "Branch(" << featureID << ", " << cut << ", ...)" << std::endl; 
     }
  
+    Branch(const Branch&) = delete;
+
     Branch(Branch&& branch) noexcept
         : mFeatureID{branch.mFeatureID}
         , mCut{branch.mCut}
@@ -70,14 +57,11 @@ public:
     {
         branch.mLower = nullptr;
         branch.mUpper = nullptr;
-
-        std::cout << "Branch(Branch&&)" << std::endl;
     }
 
     ~Branch() {
         delete mLower;
         delete mUpper;
-        std::cout << "~Branch()" << std::endl;
     }
 
     FeatureID GetFeatureID() const { return mFeatureID; }

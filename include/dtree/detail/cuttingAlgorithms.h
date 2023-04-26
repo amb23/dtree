@@ -199,7 +199,7 @@ public:
         double sum = std::accumulate(begin(feature), end(feature), 0);
         double cut = sum / labels.size();
 
-        return {CalculateCost(cut, labels, costFn), cut};
+        return {CalculateCost(cut, feature, labels, costFn), cut};
     }
 };
 

@@ -36,12 +36,12 @@ public:
     {}
 
     template <typename FeatureSet>
-    Node* Build(
+    std::unique_ptr<Node> Build(
         const FeatureSet& features,
         const Labels& labels,
         const StoppingCondition& stoppingCond) const
     {
-        return Build(0u, features, labels, stoppingCond);
+        return std::unique_ptr<Node>{Build(0u, features, labels, stoppingCond)};
     }
 
 private:
