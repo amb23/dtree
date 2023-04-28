@@ -1,8 +1,10 @@
 include(GoogleTest)
 
 add_executable(dtreeTests
-    impurityMeasureTests.cpp
-    treeBuilderTests.cpp
+    features_tests.cpp
+    impurity_measures_tests.cpp
+    splittings_tests.cpp
+    tree_builder_tests.cpp
 )
 
 gtest_add_tests(TARGET dtreeTests)

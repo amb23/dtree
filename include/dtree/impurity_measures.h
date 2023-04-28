@@ -2,12 +2,10 @@
 
 #include "dtree/labels.h"
 
-
 namespace dtree {
 
-double GiniIndex(const LabelCounts&);
+double gini_index(const label_counts&);
 
-double Entropy(const LabelCounts&);
-
+double entropy(const label_counts&);
 
 } // namespace dtree

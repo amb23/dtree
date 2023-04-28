@@ -2,23 +2,41 @@
 
 #include <ostream>
 
-#include "dtree/tree.h"
+#include "dtree/flat_tree.h"
+#include "dtree/splittings.h"
 
 namespace dtree {
 
-class TreePrinter
-{
+class TreePrinter {
 public:
-
-    static void Print(std::ostream&, const Node&, std::size_t depth = 0);
+    template <typename split_t>
+    static void Print(std::ostream& os, const flat_tree<split_t>& tree)
+    {
+        Print(os, tree, 0);
+    }
 
 private:
+    template <typename... Ts>
+    struct Overloaded : public Ts... {
+        using Ts::operator()...;
+    };
 
-    static void Print(std::ostream&, const Branch&, std::size_t depth);
-    static void Print(std::ostream&, const Leaf&, std::size_t depth);
+    template <typename tree_t, typename... Ts>
+    static void Print(std::ostream& os, const tree_t& tree, std::size_t loc)
+    {
+        std::visit(
+            Overloaded {
+                [&os, loc](const leaf& t) { Print(os, t, loc); },
+                [&os, &tree, loc](const auto& t) {
+                    Print(os, t, tree_t::get_depth(loc));
+                    Print(os, tree, tree_t::next(true, loc));
+                    Print(os, tree, tree_t::next(false, loc));
+                } },
+            tree[loc]);
+    }
+
+    static void Print(std::ostream&, const one_dimensional_split&, std::size_t depth);
+    static void Print(std::ostream&, const leaf&, std::size_t depth);
 };
-
-
-
 
 } // dtree

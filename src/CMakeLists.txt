@@ -1,8 +1,9 @@
 
 add_library(dtree
-    impurityMeasures.cpp
+    algos/roh_split.cpp
+    impurity_measures.cpp
     labels.cpp
-    stoppingCondition.cpp
+    stop_condition.cpp
     treePrinter.cpp
 )
 

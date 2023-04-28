@@ -13,7 +13,7 @@ if (fmt_FOUND)
 endif()
 
 find_package(spdlog REQUIRED)
-add_compile_definitions(SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG)
+# add_compile_definitions(SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG)
 
 add_subdirectory(src)
 

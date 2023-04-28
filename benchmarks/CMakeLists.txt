@@ -1,9 +1,9 @@
 
-set(targets treeBuilder impurityMeasures cutter)
+set(targets tree_builder impurity_measures splitter)
 
 foreach(target IN LISTS targets)
     add_executable(${target}-bench
-        ${target}Benchmarks.cpp
+        ${target}_benchmarks.cpp
     )
 
     target_include_directories(${target}-bench

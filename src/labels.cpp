@@ -1,24 +1,21 @@
 
 #include "dtree/labels.h"
 
-
 namespace dtree {
 
-LabelCounts Labels::CountLabels(const std::vector<label_t>& labels)
+label_counts labels::count_labels(const std::vector<label_t>& labels)
 {
-    LabelCounts labelCounts;
+    label_counts out;
 
-    for (auto label : labels)
-    {
-        if (label >= labelCounts.size())
-        {
-            labelCounts.resize(label + 1, 0u);
+    for (auto label : labels) {
+        if (label >= out.size()) {
+            out.resize(label + 1, 0u);
         }
 
-        labelCounts[label]++;
+        out[label]++;
     }
 
-    return labelCounts;
+    return out;
 }
 
 } // namespace dtree

@@ -2,70 +2,66 @@
 
 #include <vector>
 
-
 namespace dtree {
 
-using LabelCounts = std::vector<std::size_t>;
+using label_counts = std::vector<std::size_t>;
 
-using LabelDistribution = std::vector<double>;
+using label_distribution = std::vector<double>;
 
-
-class Labels
-{
+class labels {
 public:
     using label_t = std::size_t; // FIXME - make more compact
 
+    using value_type = label_t;
+    using reference = value_type; // FIXME
 
     template <typename... Args>
-    explicit Labels(Args&&... args)
-        : mData{std::forward<Args>(args)...}
-        , mLabelCounts{CountLabels(mData)}
-    {}
-    
-    auto begin() const { return mData.begin(); }
-    auto end() const { return mData.end(); }
-
-    label_t operator[] (std::size_t loc) const { return mData[loc]; }
-
-    std::size_t NumberOfLabels() const { return mLabelCounts.size(); }
-
-    const LabelCounts& GetLabelCounts() const { return mLabelCounts; }
-
-    LabelDistribution CalculateDistribution() const
+    explicit labels(Args&&... args)
+        : m_data { std::forward<Args>(args)... }
+        , m_label_counts { count_labels(m_data) }
     {
-        LabelDistribution labelDistribution(mLabelCounts.size(), 0.0);
-        double totalCount = mData.size();
+    }
 
-        for (std::size_t i = 0; i < mLabelCounts.size(); ++i)
-        {
-            labelDistribution[i] = static_cast<double>(mLabelCounts[i]) / totalCount;
+    auto begin() const { return m_data.begin(); }
+    auto end() const { return m_data.end(); }
+
+    label_t operator[](std::size_t loc) const { return m_data[loc]; }
+
+    std::size_t number_of_labels() const { return m_label_counts.size(); }
+
+    const label_counts& get_label_counts() const { return m_label_counts; }
+
+    label_distribution calculate_distribution() const
+    {
+        label_distribution out(m_label_counts.size(), 0.0);
+        double total_count = m_data.size();
+
+        for (std::size_t i = 0; i < m_label_counts.size(); ++i) {
+            out[i] = static_cast<double>(m_label_counts[i]) / total_count;
         }
 
-        return labelDistribution;
+        return out;
     }
 
     void push_back(label_t label)
     {
-        mData.push_back(label);
+        m_data.push_back(label);
 
-        if (label >= mLabelCounts.size())
-        {
-            mLabelCounts.resize(label + 1, 0u);
+        if (label >= m_label_counts.size()) {
+            m_label_counts.resize(label + 1, 0u);
         }
 
-        mLabelCounts[label]++;
+        m_label_counts[label]++;
     }
 
-    std::size_t size() const { return mData.size(); }
+    std::size_t size() const { return m_data.size(); }
 
 private:
-    
-    static LabelCounts CountLabels(const std::vector<label_t>&);
+    static label_counts count_labels(const std::vector<label_t>&);
 
-    std::vector<label_t> mData;
+    std::vector<label_t> m_data;
 
-    LabelCounts mLabelCounts;
+    label_counts m_label_counts;
 };
-
 
 } // namespace dtree
