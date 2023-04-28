@@ -9,12 +9,18 @@
 namespace dtree {
 
 struct one_dimensional_split {
+
+    bool operator==(const one_dimensional_split&) const = default;
+
     feature_id feature_id_;
     double split;
 };
 
 struct multi_dimensional_split {
-    std::vector<feature_id> feature_ids;
+
+    bool operator==(const multi_dimensional_split&) const = default;
+
+    feature_id feature_id_;
     std::vector<double> normal;
     double split;
 };
@@ -25,12 +31,14 @@ bool is_lower(const sample_point_t& sample_point, const one_dimensional_split& s
     return sample_point[split.feature_id_] <= split.split;
 }
 
-template <sample_point sample_point_t>
+// FIXME - get a multi_sample_point_t
+template <typename sample_point_t>
 bool is_lower(const sample_point_t& sample_point, const multi_dimensional_split& split)
 {
-    sub_range_view sub_sample(split.feature_ids, sample_point);
-    double norm_v = std::inner_product(
-        begin(sub_sample), end(sub_sample), begin(split.normal), 0.0);
+    using namespace std;
+    const auto& feature_vals = sample_point[split.feature_id_];
+    double norm_v = inner_product(
+        begin(feature_vals), end(feature_vals), begin(split.normal), 0.0);
 
     return norm_v <= split.split;
 }

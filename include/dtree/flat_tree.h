@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "dtree/labels.h"
+#include "dtree/splittings.h"
 #include "dtree/utility.h"
 
 namespace dtree {
@@ -14,10 +15,9 @@ public:
     {
     }
 
-    const label_distribution& get_distribution() const
-    {
-        return m_label_distribution;
-    }
+    bool operator==(const leaf&) const = default;
+
+    const label_distribution& distribution() const { return m_label_distribution; }
 
 private:
     label_distribution m_label_distribution;
@@ -33,21 +33,17 @@ private:
 /// specifically if a node is at location $i$ then its children are at
 /// $i << 1 + {1, 2}$. This means the class is essentially a set of functions
 /// on the underlying container.
-template <typename split_t>
-class flat_tree {
+template <typename split_t> class flat_tree {
     using node_t = std::variant<split_t, leaf>;
-    using container_t = std::vector<node_t>;
 
 public:
+    using container_t = std::vector<node_t>;
     using value_type = container_t::value_type;
     using reference = container_t::reference;
     using iterator = container_t::iterator;
     using size_type = container_t::size_type;
 
-    static std::size_t get_depth(std::size_t loc)
-    {
-        return significant_power(loc + 1u);
-    }
+    static std::size_t get_depth(std::size_t loc) { return significant_power(loc + 1u); }
 
     static std::size_t next(bool lower, std::size_t loc)
     {
@@ -64,10 +60,26 @@ public:
     {
     }
 
+    bool operator==(const flat_tree&) const = default;
+
     decltype(auto) operator[](size_type loc) { return m_container[loc]; }
     decltype(auto) operator[](size_type loc) const { return m_container[loc]; }
 
     const container_t& data() const { return m_container; }
+
+    template <typename sample_t>
+    const label_distribution& apply(const sample_t& sample) const
+    {
+        for (size_type loc = 0;;) {
+            const auto& node = m_container[loc];
+            if (std::holds_alternative<leaf>(node)) {
+                return std::get<leaf>(node).distribution();
+            }
+
+            const auto& split = std::get<split_t>(node);
+            loc = next(is_lower(sample, split), loc);
+        }
+    }
 
 private:
     container_t m_container;

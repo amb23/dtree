@@ -6,14 +6,14 @@
 
 namespace dtree {
 
-template <typename base_iterator_t, typename container_t>
-class sub_range_iterator {
+template <typename base_iterator_t, typename container_t> class sub_range_iterator {
     using base_value_t = decltype(*std::declval<base_iterator_t>());
 
 public:
     using difference_type = base_iterator_t::difference_type;
     using value_type = container_t::value_type;
-    using reference = decltype(std::declval<container_t>()[std::declval<base_value_t>()]);
+    using reference
+        = decltype(std::declval<container_t>()[std::declval<base_value_t>()]);
     using iterator_category = base_iterator_t::iterator_category;
 
     sub_range_iterator(base_iterator_t base, container_t& container)
@@ -28,10 +28,7 @@ public:
     {
     }
 
-    bool operator==(const sub_range_iterator& rhs) const
-    {
-        return m_base == rhs.m_base;
-    }
+    bool operator==(const sub_range_iterator& rhs) const { return m_base == rhs.m_base; }
 
     sub_range_iterator& operator++()
     {
@@ -46,12 +43,10 @@ public:
         return out;
     }
 
-    reference operator*() const
-    {
-        return m_container[*m_base];
-    }
+    reference operator*() const { return m_container[*m_base]; }
 
-    friend difference_type operator-(const sub_range_iterator& lhs, const sub_range_iterator& rhs)
+    friend difference_type operator-(
+        const sub_range_iterator& lhs, const sub_range_iterator& rhs)
     {
         return lhs.m_base - rhs.m_base;
     }
@@ -61,8 +56,7 @@ private:
     container_t& m_container;
 };
 
-template <typename indexes_t, typename container_t>
-class sub_range_view {
+template <typename indexes_t, typename container_t> class sub_range_view {
     using index_iterator_t = indexes_t::const_iterator;
 
 public:
@@ -97,8 +91,7 @@ private:
     container_t& m_container;
 };
 
-template <typename feature_set_t>
-class training_sample_point {
+template <typename feature_set_t> class training_sample_point {
 public:
     using sample_id_t = feature_set_t::sample_id_t;
 
@@ -108,10 +101,7 @@ public:
     {
     }
 
-    double operator[](feature_id i) const
-    {
-        return m_feature_set[i][m_sample_id];
-    }
+    double operator[](feature_id i) const { return m_feature_set[i][m_sample_id]; }
 
 private:
     sample_id_t m_sample_id;

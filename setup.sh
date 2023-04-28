@@ -10,7 +10,6 @@ Options:
     -u      Setup user name/email
     -a      Setup aliases
     -r      Set misc config flags
-    -x      Setup url rewriting rules for pushing into repo-ln
 Does a basic setup of the git checkout.
 It will verify & set your name/email, add a bunch of convenience aliases
 and tune a few things in git repo.
@@ -121,13 +120,6 @@ function repo_setup() {
     gset pull.ff only
 }
 
-function set_urls() {
-    gset 'url.repo-ln.pushInsteadOf' 'repo-au'
-    gset --add 'url.repo-ln.pushInsteadOf' 'repo-us'
-    gset 'url.ssh://repo-ln.pushInsteadOf' 'ssh://repo-au'
-    gset --add 'url.ssh://repo-ln.pushInsteadOf' 'ssh://repo-us'
-}
-
 function set_aliases() {
     ## custom log formats
     gset pretty.la    'tformat:%C(yellow)%h%Creset%C(bold red)%d%Creset %s %C(bold blue)<%an>%Creset %C(green)%ad%Creset'
@@ -189,6 +181,8 @@ function set_aliases() {
     gset alias.info 'for-each-ref --format="%(refname:short)  <=  %(upstream:short)" refs/heads'
     ## commit info for jira
     gset alias.jira '!f() { local r=${1:-HEAD}; git log -1 --pretty="tformat:Id:      $(git describe --abbrev=12 --long $r)%nDate:    %ci%nAuthor:  %an <%ae>%w(70,4,4)%n%n%-s%n%n%-b" $r; }; f'
+    ## clean branch
+    gset alias.fmt-src '!f() { find src/ include/ test/ benchmarks/ -iname *.h -o -iname *.cpp | xargs clang-format -i; }; f'
 }
 
 function log() {
@@ -201,6 +195,7 @@ function gset() {
 echo "Setting $1"
 git config $gitconfig_flags "$@"
 }
+
 
 
 #user_id
@@ -231,7 +226,7 @@ done
 
 
 do_all=1
-if [[ -n "$do_set_user_id" || -n "$do_set_aliases" || -n "$do_repo_setup" || -n "$do_url_setup" ]]; then
+if [[ -n "$do_set_user_id" || -n "$do_set_aliases" || -n "$do_repo_setup" ]]; then
     unset do_all
 fi
 
@@ -245,7 +240,4 @@ if [[ -n "$do_set_aliases" || -n "$do_all" ]]; then
 fi
 if [[ -n "$do_repo_setup" || -n "$do_all" ]]; then
     repo_setup
-fi
-if [[ -n "$do_url_setup" || -n "$do_all" ]]; then
-    set_urls
 fi

@@ -22,7 +22,7 @@ std::vector<double> roh_split::generate_random_normal(std::size_t n_features) co
         all_zero = true;
         for (std::size_t i = 0; i < n_features; ++i) {
             normal[i] = dist(gen);
-            all_zero |= std::abs(normal[i]) < epsilon;
+            all_zero &= std::abs(normal[i]) < epsilon;
         }
     }
 

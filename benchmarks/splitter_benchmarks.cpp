@@ -9,8 +9,7 @@
 #include "dtree/impurity_measures.h"
 #include "dtree/labels.h"
 
-template <typename splitter_t>
-void BM_splitter(benchmark::State& state)
+template <typename splitter_t> void BM_splitter(benchmark::State& state)
 {
     using namespace dtree;
 

@@ -33,9 +33,7 @@ std::string to_string(stopped_reason stopped_reason)
 }
 
 stop_condition::stop_condition(
-    std::size_t max_depth,
-    std::size_t min_samples,
-    double probability_limit)
+    std::size_t max_depth, std::size_t min_samples, double probability_limit)
     : m_max_depth { max_depth }
     , m_min_samples { min_samples }
     , m_probability_limit { std::clamp(probability_limit, 0.0, 1.0) }
@@ -43,8 +41,7 @@ stop_condition::stop_condition(
 }
 
 std::optional<stopped_reason> stop_condition::Check(
-    std::size_t depth,
-    const labels& labels) const
+    std::size_t depth, const labels& labels) const
 {
     if (depth >= m_max_depth)
         return stopped_reason::MaxDepth;

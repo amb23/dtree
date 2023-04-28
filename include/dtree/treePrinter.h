@@ -16,26 +16,30 @@ public:
     }
 
 private:
-    template <typename... Ts>
-    struct Overloaded : public Ts... {
+    template <typename... Ts> struct Overloaded : public Ts... {
         using Ts::operator()...;
     };
 
     template <typename tree_t, typename... Ts>
     static void Print(std::ostream& os, const tree_t& tree, std::size_t loc)
     {
-        std::visit(
-            Overloaded {
-                [&os, loc](const leaf& t) { Print(os, t, loc); },
-                [&os, &tree, loc](const auto& t) {
-                    Print(os, t, tree_t::get_depth(loc));
-                    Print(os, tree, tree_t::next(true, loc));
-                    Print(os, tree, tree_t::next(false, loc));
-                } },
+        std::visit(Overloaded { [&os, loc](const leaf& t) { Print(os, t, loc); },
+                       [&os, &tree, loc](const auto& t) {
+                           Print(os, t, tree_t::get_depth(loc));
+                           Print(os, tree, tree_t::next(true, loc));
+                           Print(os, tree, tree_t::next(false, loc));
+                       } },
             tree[loc]);
     }
 
+    template <typename... Ts>
+    static void Print(std::ostream& os, const std::variant<Ts...>& v, std::size_t depth)
+    {
+        std::visit([&os, depth](auto&& x) { Print(os, x, depth); }, v);
+    }
+
     static void Print(std::ostream&, const one_dimensional_split&, std::size_t depth);
+    static void Print(std::ostream&, const multi_dimensional_split&, std::size_t depth);
     static void Print(std::ostream&, const leaf&, std::size_t depth);
 };
 
