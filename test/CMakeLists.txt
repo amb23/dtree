@@ -1,7 +1,8 @@
 include(GoogleTest)
 
 add_executable(dtreeTests
-    features_tests.cpp
+    algos_single_numeric_tests.cpp
+    flat_tree_tests.cpp
     impurity_measures_tests.cpp
     serialization_tests.cpp
     splittings_tests.cpp

@@ -5,46 +5,88 @@
 
 #include "dtree/splittings.h"
 
-struct single_feature_test_data {
-    std::array<double, 4> sample;
-    bool expected_is_lower;
+struct single_numeric_splitting_test_data {
+    dtree::single_numeric_splitting splitting;
+    double sample;
+    bool expected_lower;
 };
 
-class one_dimensional_test_fixture
-    : public ::testing::TestWithParam<single_feature_test_data> { };
+class single_numeric_splitting_fixture
+    : public ::testing::TestWithParam<single_numeric_splitting_test_data> { };
 
-TEST_P(one_dimensional_test_fixture, test_splitting)
+TEST_P(single_numeric_splitting_fixture, test_splitting)
 {
-    using namespace dtree;
-
-    one_dimensional_split split { 2u, 0.7 };
-
-    auto [sample, expected_lower] = GetParam();
-    EXPECT_EQ(is_lower(sample, split), expected_lower);
+    auto [splitting, sample, expected_lower] = GetParam();
+    EXPECT_EQ(splitting(sample), expected_lower);
 }
 
-INSTANTIATE_TEST_CASE_P(test_one_dimensional_split, one_dimensional_test_fixture,
-    ::testing::Values(single_feature_test_data { { 1.0, 0.2, 0.4, 0.5 }, true },
-        single_feature_test_data { { 1.0, 0.2, 0.9, 0.5 }, false }));
+INSTANTIATE_TEST_CASE_P(test_single_numeric_splitting, single_numeric_splitting_fixture,
+    ::testing::Values(single_numeric_splitting_test_data { { 0.7 }, 0.6, true },
+        single_numeric_splitting_test_data { { 0.7 }, 0.9, false },
+        single_numeric_splitting_test_data { { 0.7 }, 0.7, true }));
 
-struct multi_feature_test_data {
-    std::vector<std::array<double, 2>> sample;
-    bool expected_is_lower;
+struct multi_numeric_splitting_test_data {
+    dtree::multi_numeric_splitting splitting;
+    std::array<double, 3> sample;
+    bool expected_lower;
 };
 
-class multi_dimensional_test_fixture
-    : public ::testing::TestWithParam<multi_feature_test_data> { };
+class multi_numeric_splitting_fixture
+    : public ::testing::TestWithParam<multi_numeric_splitting_test_data> { };
 
-TEST_P(multi_dimensional_test_fixture, test_splitting)
+TEST_P(multi_numeric_splitting_fixture, test_splitting)
 {
-    using namespace dtree;
-    multi_dimensional_split split { 1u, { 0.5, -1, 0 }, 1.0 };
-
-    auto [sample, expected_lower] = GetParam();
-    EXPECT_EQ(is_lower(sample, split), expected_lower);
+    auto [splitting, sample, expected_lower] = GetParam();
+    EXPECT_EQ(splitting(sample), expected_lower);
 }
 
-INSTANTIATE_TEST_CASE_P(test_multi_dimensional_split, multi_dimensional_test_fixture,
-    ::testing::Values(multi_feature_test_data { { { 1.0, 0.2 }, { 0.4, 0.5 } }, true },
-        multi_feature_test_data { { { 1.0, 0.2 }, { 1.0, -0.6 } }, false },
-        multi_feature_test_data { { { 1.0, -0.2 }, { -1.0, -1.0 } }, true }));
+INSTANTIATE_TEST_CASE_P(test_multi_numeric_splitting, multi_numeric_splitting_fixture,
+    ::testing::Values(multi_numeric_splitting_test_data { { { 0.4, 0.5, 1.4 }, 0.7 },
+                          { 0.6, -0.5, 0.8 }, false },
+        multi_numeric_splitting_test_data {
+            { { 0.1, 0.3, -0.4 }, -0.5 }, { 0.9, -2.0, -1.0 }, false }));
+
+struct has_substring_splitting_test_data {
+    dtree::has_substring_splitting splitting;
+    std::string sample;
+    bool expected_lower;
+};
+
+class has_substring_splitting_fixture
+    : public ::testing::TestWithParam<has_substring_splitting_test_data> { };
+
+TEST_P(has_substring_splitting_fixture, test_spliting)
+{
+    auto [splitting, sample, expected_lower] = GetParam();
+    EXPECT_EQ(splitting(sample), expected_lower);
+}
+
+INSTANTIATE_TEST_CASE_P(test_has_substring_splitting, has_substring_splitting_fixture,
+    ::testing::Values(
+        has_substring_splitting_test_data { { "golden" }, "gold ended here", false },
+        has_substring_splitting_test_data { { "fun t" }, "wedi gorffun traeth", true }));
+
+struct splitting_variant_test_data {
+    dtree::splitting_variant<dtree::single_numeric_splitting,
+        dtree::multi_numeric_splitting>
+        splitting;
+    std::variant<double, std::array<double, 3>> sample;
+    bool expected_lower;
+};
+
+class splitting_variant_fixture
+    : public ::testing::TestWithParam<splitting_variant_test_data> { };
+
+TEST_P(splitting_variant_fixture, test_spliting)
+{
+    auto [splitting, sample, expected_lower] = GetParam();
+    EXPECT_EQ(splitting(sample), expected_lower);
+}
+
+INSTANTIATE_TEST_CASE_P(test_splitting_variant, splitting_variant_fixture,
+    ::testing::Values(
+        splitting_variant_test_data {
+            dtree::single_numeric_splitting { 0.7 }, { 0.6 }, true },
+        splitting_variant_test_data {
+            dtree::multi_numeric_splitting { { 0.4, 0.5, 1.4 }, 0.7 },
+            std::array { 0.6, -0.5, 0.8 }, false }));

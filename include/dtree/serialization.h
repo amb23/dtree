@@ -2,171 +2,146 @@
 
 #include <ostream>
 
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/variant.hpp>
+#include <boost/serialization/vector.hpp>
+
 #include "dtree/flat_tree.h"
 #include "dtree/splittings.h"
+#include "dtree/types.h"
 
-namespace dtree {
+namespace boost::serialization {
 
-template <typename T> class serializer {
-public:
-    static_assert(std::is_trivial_v<T>);
-
-    void serialize(std::ostream& os, const T& t) const
-    {
-        os.write(reinterpret_cast<const char*>(&t), sizeof(T));
-    }
-
-    T deserialize(std::istream& is) const
-    {
-        T t;
-        is.read(reinterpret_cast<char*>(&t), sizeof(T));
-        return t;
-    }
-};
-
-template <typename T> class serializer<std::vector<T>> {
-public:
-    void serialize(std::ostream& os, const std::vector<T>& data) const
-    {
-        using size_type = std::vector<T>::size_type;
-        size_type size = data.size();
-        os.write(reinterpret_cast<const char*>(&size), sizeof(size_type));
-        for (const auto& elem : data) {
-            m_elem_serializer.serialize(os, elem);
-        }
-    }
-
-    std::vector<T> deserialize(std::istream& is) const
-    {
-        using size_type = std::vector<T>::size_type;
-        size_type size;
-        is.read(reinterpret_cast<char*>(&size), sizeof(size_type));
-
-        std::vector<T> data;
-        data.reserve(size);
-        for (size_type i = 0; i < size; ++i) {
-            data.push_back(m_elem_serializer.deserialize(is));
-        }
-
-        return data;
-    }
-
-private:
-    serializer<T> m_elem_serializer;
-};
-
-template <typename... Ts> class serializer<std::variant<Ts...>> {
-    using index_type = decltype(std::declval<std::variant<Ts...>>().index());
-    static constexpr std::size_t n_indexes = sizeof...(Ts);
-
-public:
-    void serialize(std::ostream& os, const std::variant<Ts...>& data) const
-    {
-        index_type index = data.index();
-        os.write(reinterpret_cast<const char*>(&index), sizeof(index));
-        serialize<0>(os, index, data);
-    }
-
-    std::variant<Ts...> deserialize(std::istream& is) const
-    {
-        index_type index;
-        is.read(reinterpret_cast<char*>(&index), sizeof(index_type));
-        std::variant<Ts...> v;
-        deserialize<0>(is, index, v);
-        return v;
-    }
-
-private:
-    template <index_type index_val>
-    void serialize(
-        std::ostream& os, index_type target, const std::variant<Ts...>& v) const
-    {
-        if constexpr (index_val < n_indexes) {
-            if (index_val == target) {
-                const auto& data = std::get<index_val>(v);
-                serializer<std::decay_t<decltype(data)>> {}.serialize(os, data);
-            } else {
-                serialize<index_val + 1>(os, target, v);
-            }
-        }
-    }
-
-    template <index_type index_val>
-    void deserialize(std::istream& is, index_type target, std::variant<Ts...>& v) const
-    {
-        if constexpr (index_val < n_indexes) {
-            if (index_val == target) {
-                using data_t = std::decay_t<decltype(std::get<index_val>(v))>;
-                data_t data = serializer<data_t> {}.deserialize(is);
-                v = data;
-            } else {
-                deserialize<index_val + 1>(is, target, v);
-            }
-        }
-    }
-};
-
-template <> class serializer<leaf> {
-public:
-    void serialize(std::ostream& os, const leaf& leaf) const
-    {
-        m_impl.serialize(os, leaf.distribution());
-    }
-
-    leaf deserialize(std::istream& is) const { return leaf { m_impl.deserialize(is) }; }
-
-private:
-    using impl_t = std::decay_t<decltype(std::declval<leaf>().distribution())>;
-    serializer<impl_t> m_impl;
-};
-
-template <> class serializer<multi_dimensional_split> {
-    using type_1 = decltype(std::declval<multi_dimensional_split>().feature_id_);
-    using type_2 = decltype(std::declval<multi_dimensional_split>().normal);
-    using type_3 = decltype(std::declval<multi_dimensional_split>().split);
-
-public:
-    void serialize(std::ostream& os, const multi_dimensional_split& split) const
-    {
-        serializer<type_1> {}.serialize(os, split.feature_id_);
-        serializer<type_2> {}.serialize(os, split.normal);
-        serializer<type_3> {}.serialize(os, split.split);
-    }
-
-    multi_dimensional_split deserialize(std::istream& is) const
-    {
-        auto feature_id_ = serializer<type_1> {}.deserialize(is);
-        auto normal = serializer<type_2> {}.deserialize(is);
-        auto split = serializer<type_3> {}.deserialize(is);
-
-        return { feature_id_, normal, split };
-    }
-};
-
-template <typename split_t> class serializer<flat_tree<split_t>> {
-public:
-    void serialize(std::ostream& os, const flat_tree<split_t>& tree)
-    {
-        m_impl.serialize(os, tree.data());
-    }
-
-    flat_tree<split_t> deserialize(std::istream& is) const
-    {
-        return flat_tree<split_t> { m_impl.deserialize(is) };
-    }
-
-private:
-    serializer<typename flat_tree<split_t>::container_t> m_impl;
-};
-
-template <typename T> void serialize(std::ostream& os, const T& t)
+template <typename archive_t, typename... Ts>
+void save(archive_t& archive, const std::variant<Ts...>& v, unsigned int)
 {
-    serializer<T> {}.serialize(os, t);
+    using index_type = std::decay_t<decltype(v.index())>;
+    index_type index = v.index();
+    archive& make_nvp("index", index);
+    std::visit([&archive](auto&& data) { archive& BOOST_SERIALIZATION_NVP(data); }, v);
 }
 
-template <typename T> T deserialize(std::istream& is)
+struct variant_loader {
+    template <std::size_t current_index, typename archive_t, typename... Ts>
+    static void load(std::size_t index, archive_t& archive, std::variant<Ts...>& out)
+    {
+        if constexpr (current_index < sizeof...(Ts)) {
+            if (index == current_index) {
+                using data_t = dtree::element_t<current_index, Ts...>;
+                data_t data;
+                archive >> BOOST_SERIALIZATION_NVP(data);
+                out = data;
+            } else {
+                variant_loader::load<current_index + 1>(index, archive, out);
+            }
+        } else {
+            std::stringstream msg;
+            // TODO - add type info to error msg
+            msg << "Couldn't load variant with the given index: " << index;
+
+            throw std::runtime_error { msg.str() };
+        }
+    }
+};
+
+template <typename archive_t, typename... Ts>
+void load(archive_t& archive, std::variant<Ts...>& out, unsigned int)
 {
-    return serializer<T> {}.deserialize(is);
+    using index_type = std::decay_t<decltype(out.index())>;
+    index_type index;
+    archive >> make_nvp("index", index);
+
+    variant_loader::load<0>(index, archive, out);
 }
 
-} // dtree
+template <typename archive_t, typename... Ts>
+void serialize(archive_t& archive, std::variant<Ts...>& out, unsigned int version)
+{
+    split_free(archive, out, version);
+}
+
+template <typename archive_t>
+void serialize(
+    archive_t& archive, dtree::single_numeric_splitting& splitting, unsigned int)
+{
+    archive& make_nvp("split", splitting.split);
+}
+
+template <typename archive_t>
+void serialize(
+    archive_t& archive, dtree::multi_numeric_splitting& splitting, unsigned int)
+{
+    archive& make_nvp("normal", splitting.normal);
+    archive& make_nvp("split", splitting.split);
+}
+
+template <typename archive_t>
+void serialize(
+    archive_t& archive, dtree::has_substring_splitting& splitting, unsigned int)
+{
+    archive& make_nvp("substring", splitting.substring);
+}
+
+template <typename archive_t>
+void serialize(
+    archive_t& archive, dtree::string_length_splitting& splitting, unsigned int)
+{
+    archive& make_nvp("length", splitting.length);
+}
+
+template <typename archive_t, typename... splitting_ts>
+void serialize(
+    archive_t& archive, dtree::splitting_variant<splitting_ts...>& v, unsigned int)
+{
+    archive& make_nvp("splittings", v.splittings);
+}
+
+template <typename archive_t>
+void save(archive_t& archive, const dtree::leaf& leaf, unsigned int)
+{
+    archive& make_nvp("distribution", leaf.distribution());
+}
+
+template <typename archive_t>
+void load(archive_t& archive, dtree::leaf& leaf, unsigned int)
+{
+    dtree::label_distribution distribution;
+    archive >> make_nvp("distribution", distribution);
+    leaf = dtree::leaf { std::move(distribution) };
+}
+
+template <typename archive_t>
+void serialize(archive_t& archive, dtree::leaf& leaf, unsigned int version)
+{
+    split_free(archive, leaf, version);
+}
+
+template <typename archive_t, typename splitting_t>
+void serialize(archive_t& archive, dtree::node<splitting_t>& node, unsigned int)
+{
+    archive& make_nvp("feature_id", node.feature_id_);
+    archive& make_nvp("splitting", node.splitting);
+}
+
+template <typename archive_t, typename split_t>
+void save(archive_t& archive, const dtree::flat_tree<split_t>& tree, unsigned int)
+{
+    archive& make_nvp("data", tree.data());
+}
+
+template <typename archive_t, typename split_t>
+void load(archive_t& archive, dtree::flat_tree<split_t>& tree, unsigned int)
+{
+    using container_t = dtree::flat_tree<split_t>::container_t;
+    container_t container;
+    archive >> make_nvp("data", container);
+    tree = dtree::flat_tree<split_t> { std::move(container) };
+}
+
+template <typename archive_t, typename split_t>
+void serialize(archive_t& archive, dtree::flat_tree<split_t>& tree, unsigned int version)
+{
+    split_free(archive, tree, version);
+}
+
+} // boost::serialization

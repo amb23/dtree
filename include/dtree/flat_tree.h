@@ -10,7 +10,13 @@ namespace dtree {
 
 class leaf {
 public:
-    leaf(label_distribution label_distribution)
+    // TODO - remove this perhaps
+    leaf()
+        : m_label_distribution {}
+    {
+    }
+
+    explicit leaf(label_distribution label_distribution)
         : m_label_distribution { std::move(label_distribution) }
     {
     }
@@ -25,15 +31,14 @@ private:
 
 /// flat_tree
 ///
-/// The simplest type of tree we have. It is potentially sparse if the tree
-/// completes at other levels early.
-/// For a tree of depth $n$ we could have at most $2^(n+1) - 1$ and this
-/// model stores these nodes as a contiguous block. This does make searching
-/// through the tree quite simple as we know where the next nodes are -
-/// specifically if a node is at location $i$ then its children are at
-/// $i << 1 + {1, 2}$. This means the class is essentially a set of functions
-/// on the underlying container.
+/// The simplest type of tree we have. It is quite wasteful if the tree completes at
+/// depths significantly before the max depth. For a tree of depth $n$ we have at most
+/// $2^(n+1) - 1$ nodes and this model stores them as a contiguous block. This does make
+/// searching through the tree quite simple as we know where the next nodes are -
+/// specifically if a node is at location $i$ then its children are at $i << 1 + {1|2}$.
 template <typename split_t> class flat_tree {
+    // TODO - do we want to make sure split_t = node<split_t>??
+    //      - or do we wrap in a node here?
     using node_t = std::variant<split_t, leaf>;
 
 public:
@@ -50,6 +55,11 @@ public:
         return (loc << 1) + (lower ? 1u : 2u);
     }
 
+    flat_tree()
+        : m_container {}
+    {
+    }
+
     explicit flat_tree(std::size_t max_depth)
         : m_container((1 << (max_depth + 1)) - 1)
     {
@@ -60,6 +70,7 @@ public:
     {
     }
 
+    // TODO - this should not be defaulted as anything after a leaf is unreachable
     bool operator==(const flat_tree&) const = default;
 
     decltype(auto) operator[](size_type loc) { return m_container[loc]; }
@@ -77,7 +88,7 @@ public:
             }
 
             const auto& split = std::get<split_t>(node);
-            loc = next(is_lower(sample, split), loc);
+            loc = next(split.splitting(sample[split.feature_id_]), loc);
         }
     }
 

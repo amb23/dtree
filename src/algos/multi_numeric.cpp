@@ -1,19 +1,17 @@
 
 #include <random>
 
-#include "dtree/algos/roh_split.h"
+#include "dtree/algos/multi_numeric.h"
 
 namespace dtree::algos {
 
 constexpr double epsilon = 1e-8;
 
-std::vector<double> roh_split::generate_random_normal(std::size_t n_features) const
+std::vector<double> generate_random_normal(std::size_t n_features, unsigned int seed)
 {
     std::vector<double> normal(n_features, 0.0);
 
-    // FIXME - pass a seed to the constructor
-    std::random_device rd {};
-    std::mt19937 gen { rd() };
+    std::mt19937 gen { seed == 0 ? std::random_device {}() : seed };
 
     std::normal_distribution<double> dist;
 

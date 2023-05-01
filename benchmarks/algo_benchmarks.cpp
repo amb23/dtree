@@ -4,12 +4,11 @@
 
 #include <benchmark/benchmark.h>
 
-#include "dtree/algos/median_split.h"
-#include "dtree/algos/optimal_split.h"
+#include "dtree/algos/single_numeric.h"
 #include "dtree/impurity_measures.h"
 #include "dtree/labels.h"
 
-template <typename splitter_t> void BM_splitter(benchmark::State& state)
+template <typename algo_t> void BM_algo(benchmark::State& state)
 {
     using namespace dtree;
 
@@ -27,18 +26,18 @@ template <typename splitter_t> void BM_splitter(benchmark::State& state)
         labels.push_back(l_dist(gen));
     }
 
-    splitter_t splitter;
+    algo_t algo;
 
     for (auto _ : state) {
-        auto out = splitter(feature, labels, gini_index);
+        auto out = algo(feature, labels, gini_index);
     }
 }
 
-BENCHMARK(BM_splitter<dtree::algos::optimal_split>)
+BENCHMARK(BM_algo<dtree::algos::optimal_split>)
     ->RangeMultiplier(10)
     ->Range(100, 10'000'000);
 
-BENCHMARK(BM_splitter<dtree::algos::median_split>)
+BENCHMARK(BM_algo<dtree::algos::median_split>)
     ->RangeMultiplier(10)
     ->Range(100, 10'000'000);
 

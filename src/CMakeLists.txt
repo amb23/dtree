@@ -1,15 +1,14 @@
 
 add_library(dtree
-    algos/roh_split.cpp
+    algos/multi_numeric.cpp
     impurity_measures.cpp
     labels.cpp
-    stop_condition.cpp
-    treePrinter.cpp
 )
 
 target_include_directories(dtree
     PUBLIC
     ${CMAKE_SOURCE_DIR}/include
+    ${Boost_INCLUDE_DIR}
     ${fmt_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
 )
@@ -17,4 +16,5 @@ target_include_directories(dtree
 target_link_libraries(dtree
     PRIVATE
     spdlog::spdlog
+    Boost::serialization
 )

@@ -2,7 +2,7 @@
 
 namespace dtree {
 
-// FIXME - make work for other compilers
+// TODO - make work for other compilers
 inline unsigned int significant_power(unsigned int x)
 {
     constexpr int max = sizeof(unsigned int) * 8 - 1;

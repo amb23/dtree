@@ -1,5 +1,5 @@
 
-set(targets tree_builder impurity_measures splitter)
+set(targets tree_builder impurity_measures algo)
 
 foreach(target IN LISTS targets)
     add_executable(${target}-${DTREE_VERSION}-bench

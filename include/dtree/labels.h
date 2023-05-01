@@ -1,13 +1,11 @@
 #pragma once
 
-#include <vector>
+#include "dtree/types.h"
 
 namespace dtree {
 
-using label_counts = std::vector<std::size_t>;
-
-using label_distribution = std::vector<double>;
-
+// FIXME - do we want a labels type or do we want a
+//         to just have methods around the labels?
 class labels {
 public:
     using label_t = std::size_t; // FIXME - make more compact
@@ -21,6 +19,8 @@ public:
         , m_label_counts { count_labels(m_data) }
     {
     }
+
+    void reserve(std::size_t size) { m_data.reserve(size); }
 
     auto begin() const { return m_data.begin(); }
     auto end() const { return m_data.end(); }

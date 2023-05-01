@@ -6,10 +6,9 @@
 
 #include <benchmark/benchmark.h>
 
-#include "dtree/algos/optimal_split.h"
+#include "dtree/algos/single_numeric.h"
 #include "dtree/impurity_measures.h"
 #include "dtree/labels.h"
-#include "dtree/splitter.h"
 #include "dtree/tree_builder.h"
 
 void run_test(dtree::tree_builder_config config, benchmark::State& state)
@@ -46,27 +45,26 @@ void run_test(dtree::tree_builder_config config, benchmark::State& state)
         y.push_back(l_dist(gen));
     }
 
-    using splitter_t = one_dimensional_splitter<algos::optimal_split>;
-    tree_builder builder { config, splitter_t {}, gini_index };
+    tree_builder builder { config, algos::optimal_split {}, gini_index };
 
     for (auto _ : state) {
-        auto out = builder.build(X, y, stop_condition { max_depth, 10u, 0.95 });
+        auto out = builder.build(X, y);
     }
 }
 
 void BM_build_tree_sync(benchmark::State& state)
 {
-    run_test(dtree::tree_builder_config { false, 0u }, state);
+    run_test(dtree::tree_builder_config { false, 0u, 10u, 10u, 0.95 }, state);
 }
 
 void BM_build_tree_async(benchmark::State& state)
 {
-    run_test(dtree::tree_builder_config { true, 0u }, state);
+    run_test(dtree::tree_builder_config { true, 0u, 10u, 10u, 0.95 }, state);
 }
 
 void BM_build_tree_bounded_async(benchmark::State& state)
 {
-    run_test(dtree::tree_builder_config { true, 20'000u }, state);
+    run_test(dtree::tree_builder_config { true, 20'000u, 10u, 10u, 0.95 }, state);
 }
 
 BENCHMARK(BM_build_tree_sync)
@@ -83,7 +81,7 @@ BENCHMARK(BM_build_tree_sync)
     ->Args({ 100, 100'000 })
     //->Args({100, 1'000'000})
     ;
-
+/*
 BENCHMARK(BM_build_tree_async)
     ->Args({ 1, 1'000 })
     ->Args({ 1, 10'000 })
@@ -112,6 +110,6 @@ BENCHMARK(BM_build_tree_bounded_async)
     ->Args({ 100, 10'000 })
     ->Args({ 100, 100'000 })
     //->Args({100, 1'000'000})
-    ;
+    ;*/
 
 BENCHMARK_MAIN();

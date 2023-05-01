@@ -1,60 +1,38 @@
 
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 #include <gtest/gtest.h>
 
 #include "dtree/serialization.h"
+#include "dtree/splittings.h"
+
+template <typename oarchive_t, typename iarchive_t, typename T>
+void check_serialization_for_archive(const T& t)
+{
+    std::stringstream ss;
+    {
+        oarchive_t oarchive { ss };
+        oarchive << boost::serialization::make_nvp("data", t);
+    }
+    {
+        iarchive_t iarchive { ss };
+        T out;
+        iarchive >> boost::serialization::make_nvp("data", out);
+
+        EXPECT_EQ(out, t);
+    }
+}
 
 template <typename T> void check_serialization(const T& t)
 {
-    using namespace dtree;
-
-    std::stringstream ss;
-    serialize(ss, t);
-
-    auto out = deserialize<T>(ss);
-
-    EXPECT_EQ(out, t);
-}
-
-TEST(test_serialization, test_int)
-{
-    int x = 8;
-    check_serialization(x);
-}
-
-TEST(test_serialization, test_long)
-{
-    long x = 89;
-    check_serialization(x);
-}
-
-TEST(test_serialization, test_float)
-{
-    float x = 3.14f;
-    check_serialization(x);
-}
-
-TEST(test_serialization, test_double)
-{
-    double x = 670.5;
-    check_serialization(x);
-}
-
-TEST(test_serialization, test_vector_empty)
-{
-    std::vector<int> v {};
-    check_serialization(v);
-}
-
-TEST(test_serialization, test_vector_int)
-{
-    std::vector<int> v { 1, 4, 3, 7 };
-    check_serialization(v);
-}
-
-TEST(test_serialization, test_vector_vector_int)
-{
-    std::vector<std::vector<int>> v { { 1, 4 }, { 4, 3, 7 }, { 99 }, {} };
-    check_serialization(v);
+    using namespace boost::archive;
+    check_serialization_for_archive<binary_oarchive, binary_iarchive>(t);
+    check_serialization_for_archive<text_oarchive, text_iarchive>(t);
+    check_serialization_for_archive<xml_oarchive, xml_iarchive>(t);
 }
 
 TEST(test_serialization, test_varaint_invalid_state)
@@ -87,16 +65,30 @@ TEST(test_serialization, test_variant_with_vector)
     check_serialization(v);
 }
 
-TEST(test_serialization, test_one_dimensional_split)
+TEST(test_serialization, test_single_numeric_splitting)
 {
-    dtree::one_dimensional_split s { 346, 0.786 };
-    check_serialization(s);
+    dtree::single_numeric_splitting splitting { 0.9 };
+    check_serialization(splitting);
 }
 
-TEST(test_serialization, test_multi_dimensional_split)
+TEST(test_serialization, test_multi_numeric_splitting)
 {
-    dtree::multi_dimensional_split s { 10544, std::vector { 0.56, -0.89, 1.23 }, 0.66 };
-    check_serialization(s);
+    dtree::multi_numeric_splitting splitting { { 0.8, 0.6 }, 0.9 };
+    check_serialization(splitting);
+}
+
+TEST(test_serialization, test_has_substring_splitting)
+{
+    dtree::has_substring_splitting splitting {
+        "sent all up her body a hardness, a hollowness, a strain"
+    };
+    check_serialization(splitting);
+}
+
+TEST(test_serialization, test_string_length_splitting)
+{
+    dtree::string_length_splitting splitting { 34 };
+    check_serialization(splitting);
 }
 
 TEST(test_serialization, test_leaf)
@@ -107,26 +99,10 @@ TEST(test_serialization, test_leaf)
 
 TEST(test_serialization, test_flat_tree_one_dimensional)
 {
-    dtree::flat_tree<dtree::one_dimensional_split> t(12);
-    t[0] = dtree::one_dimensional_split { 23, 0.67 };
-    t[100] = dtree::leaf { dtree::label_distribution { 0.2, 0.15, 0.15, 0.5 } };
+    using namespace dtree;
+    using node_type = node<single_numeric_splitting>;
+    flat_tree<node_type> t(4);
+    t[0] = node_type { 23, { 0.67 } };
+    t[10] = leaf { label_distribution { 0.2, 0.15, 0.15, 0.5 } };
     check_serialization(t);
-}
-
-#include <fstream>
-
-TEST(test_serialization, test_flat_tree_file)
-{
-    dtree::flat_tree<dtree::one_dimensional_split> t(12);
-    t[0] = dtree::one_dimensional_split { 23, 0.67 };
-    t[100] = dtree::leaf { dtree::label_distribution { 0.2, 0.15, 0.15, 0.5 } };
-    {
-        std::fstream f { "tmp.data", std::ios::out };
-        dtree::serialize(f, t);
-    }
-    {
-        std::fstream f { "tmp.data", std::ios::in };
-        auto out = dtree::deserialize<dtree::flat_tree<dtree::one_dimensional_split>>(f);
-        EXPECT_EQ(out, t);
-    }
 }
